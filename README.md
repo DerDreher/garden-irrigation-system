@@ -38,15 +38,16 @@ Wer einen Channel nutzen möchte sollte ihn jetzt ganz normal über z.B. die Sma
 >4. User ID's sind positiv! Diese findest du dann unter den Mitgliedern der Gruppe (es müssen natürlich welche in der Gruppe sein ;) ) Wie bei den Channels auf den Namen klicken und dann aus der Adresszeile ablesen z.B. https://web.telegram.org/z/#98765432
 >5. Wäre aus diesem Beispielen also ChannelID -> -123456789 und UserID -> 98765432
 
-In der "arduino_secrets.h" Datei müst ihr nun ein paar wichtige Eingaben tätigen.
->#define SECRET_WLAN_SSID "" <<< Der Name eueres WLAN's<br>
-#define SECRET_WLAN_PASS "" <<< WLAN Passwort<br>
-#define SECRET_TELEGRAM_TOKEN ""  <<< Eurer Telegram Bot Token<br>
-#define SECRET_TELEGRAM_FAMILYCHAT "" <<< Wenn mehrere den Bot nutzen wollen lohnt sich ein Chat anzulegen, ID hier rein<br>
-#define SECRET_TELEGRAM_ADMIN1 "" <<< Telegramm User ID des Hauptadmin (hier werden auch Debugmeldungen ausgegeben) <br>
-#define SECRET_TELEGRAM_ADMIN2 "" <<< zusätzlicher Zugang für eine Person<br>
-#define SECRET_OTA_PASS ""  <<< wer mit OTA Arbeitet kann hier ein "Upload Schutz" Passwort festlegen. Drigend empfohlen.<br>
-
+In der "arduino_secrets.h" Datei müst ihr nun ein paar wichtige Eingaben tätigen. (Beispielhaft)
+```
+#define SECRET_WLAN_SSID "MustermannsWLAN"       // Der Name eueres WLAN's
+#define SECRET_WLAN_PASS "Musterpasswort"        // WLAN Passwort
+#define SECRET_TELEGRAM_TOKEN "lkgdjgr9324676GGHNAsd1!§$!%1vfhsafdjsd7"  // Eurer Telegram Bot Token
+#define SECRET_TELEGRAM_FAMILYCHAT "-123456789"  // Wenn mehrere den Bot nutzen wollen lohnt sich ein Chat anzulegen, ID hier rein
+#define SECRET_TELEGRAM_ADMIN1 "98765432"        // Telegramm User ID des Hauptadmin (hier werden auch Debugmeldungen ausgegeben)
+#define SECRET_TELEGRAM_ADMIN2 ""                // zusätzlicher Zugang für eine Person
+#define SECRET_OTA_PASS "OTAmusterPasswort"      // wer mit OTA Arbeitet kann hier ein "Upload Schutz" Passwort festlegen. Drigend empfohlen.
+```
 Für das erstmalige Uploaden der Firmeware/Sketches braucht ihr einen FTDI-USB Adapter. Beispiellink im Anschluss. Den Mikrokontroller müsst ihr in den Flash Modus booten (FLASH Taste gedrückt halten und dann die RESET Taste drücken) Habt ihr das Teil angesteckt und via USB Kabel mit eurem Rechner verbunden könnt ihr den Script Hochladen. Die notwendigen Einstellungen für den Compiler stehen ebenfalls im Kopfbereich des Sketches. Nach dem Erfolgreichen Upload nochmal die RESET Taste drücken. Nun sollte der ESP laufen!
 https://www.amazon.de/AZDelivery-Adapter-FT232RL-Serial-gratis/dp/B01N9RZK6I?th=1
 
