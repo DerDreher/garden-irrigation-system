@@ -1,0 +1,47 @@
+{
+  "cpu": {
+    "fqbn": "esp8266:esp8266:generic:CrystalFreq=26,FlashFreq=40,FlashMode=dout,ResetMethod=ck,baud=115200,dbg=Disabled,eesz=4M,exception=disabled,ip=lm2f,led=0,lvl=None____,vt=flash,wipe=none,xtal=80",
+    "name": "Generic ESP8266 Module",
+    "type": "serial"
+  },
+  "secrets": [
+    {
+      "name": "SECRET_WLAN_SSID",
+      "value": ""
+    },
+    {
+      "name": "SECRET_WLAN_PASS",
+      "value": ""
+    },
+    {
+      "name": "SECRET_TELEGRAM_TOKEN",
+      "value": ""
+    },
+    {
+      "name": "SECRET_TELEGRAM_FAMILYCHAT",
+      "value": ""
+    },
+    {
+      "name": "SECRET_TELEGRAM_ADMIN1",
+      "value": ""
+    },
+    {
+      "name": "SECRET_TELEGRAM_ADMIN2",
+      "value": ""
+    },
+    {
+      "name": "SECRET_OTA_PASS",
+      "value": ""
+    }
+  ],
+  "included_libs": [
+    {
+      "name": "ArduinoJson",
+      "version": "5.13.0"
+    },
+    {
+      "name": "Time",
+      "version": "1.4.0"
+    }
+  ]
+}
