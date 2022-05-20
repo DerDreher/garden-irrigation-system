@@ -1,10 +1,10 @@
 # garden-irrigation-system
 A control software for a 4 circuit irrigation system. #ESP8266 #WIFI #TELEGRAM
 
-# Persönliche Note:
+### Persönliche Note:
 Im Frühling 2020 beschloss ich nach dem Umzug in unserer neuen Wohnung meinen eigenen Bewässerungscomputer für unseren Garten zu bauen. Zu diesem Zeitpunkt gab es wenige, kostengünstige Steuerungen mit WLAN Anschluss die per Internet zu bedienen waren. Also probierte ich mich am großen DIY :) Die Ideen waren schnell gesammelt und dabei kam folgendes zusammen:
 
-# Grundfunktionen der Bewässerungsteuerung
+### Grundfunktionen der Bewässerungsteuerung
 - kann 4 Wasser Kreise steuern
 - erzeugt ein 50Hz Rechtecksignal für VDC Magnetventile
 - Eingang für Regensensor, Einstellbar ob dieser auch beachtet wird.
@@ -13,14 +13,14 @@ Im Frühling 2020 beschloss ich nach dem Umzug in unserer neuen Wohnung meinen e
 - Bewässerungsdauer pro Kreis einstellbar
 - 10 Bewässerungspläne programmierbar
 - Grundlage ist die Bedienung über den Messenger Telegram
-- Integrierter Telegram Bot kann auch in Gruppen Chat eingesetzt werden
+- Integrierter Telegram Bot kann auch im Gruppenchat eingesetzt werden
 - OTA Update möglichkeit 
 
-# Das passende Board
+### Das passende Board
 Im folgenden Link ist das passende Board zum nachbauen oder abkupfern. Die SMD Bauteile sind noch in gut verarbeitbarer Größe gewählt.
 https://oshwlab.com/DerDreher85/bewaesserung
 
-# Installation / Einrichtung
+### Installation / Einrichtung
 Das ganze wurde mit der Arduino IDE programmiert. Dafür müsst ihr die ESP Boards der IDE hinzufügen. Anleitung im folgenden Link:
 https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/
 
@@ -47,4 +47,26 @@ In der "arduino_secrets.h" Datei müst ihr nun ein paar wichtige Eingaben tätig
 #define SECRET_TELEGRAM_ADMIN2 "" <<< zusätzlicher Zugang für eine Person<br>
 #define SECRET_OTA_PASS ""  <<< wer mit OTA Arbeitet kann hier ein "Upload Schutz" Passwort festlegen. Drigend empfohlen.<br>
 
-Für das erstmalige Uploaden der Firmeware/Sketches braucht ihr einen FTDI-Adapter. Beispiellink im Anschluss. Habt ihr das Teil angesteckt und VIA USB Kabel mit eurem Rechner verbunden könnt ihr den Script Hochladen. Die notwendigen Einstellungen für den Compiler stehen ebenfalls im Kopfbereich des Sketches.
+Für das erstmalige Uploaden der Firmeware/Sketches braucht ihr einen FTDI-USB Adapter. Beispiellink im Anschluss. Den Mikrokontroller müsst ihr in den Flash Modus booten (FLASH Taste gedrückt halten und dann die RESET Taste drücken) Habt ihr das Teil angesteckt und via USB Kabel mit eurem Rechner verbunden könnt ihr den Script Hochladen. Die notwendigen Einstellungen für den Compiler stehen ebenfalls im Kopfbereich des Sketches. Nach dem Erfolgreichen Upload nochmal die RESET Taste drücken. Nun sollte der ESP laufen!
+https://www.amazon.de/AZDelivery-Adapter-FT232RL-Serial-gratis/dp/B01N9RZK6I?th=1
+
+### Der Erste Start
+Sucht aus eurer Kontaktliste euren Bot herraus. Als ersten Test schreibe ein `/start` in den Chat. Der Bot sollte nach spätestens 40 Sek antworten. Wenn nicht wirf unten ein Blick in die Problembehandlung. Aber zurück zum "ersten Start". ***Folgender Schritt ist sehr sehr wichtig!*** Tippe `/werkseinstellung` in den Chat. Damit werden alle relevanten Speicherpunkte im EEPROM mit einem gültigen Wert deklariert. Erst jetzt funktioniert der Mikrokontroller so wie er soll!
+
+### Bedienung und Befehle
+Die Steuerung wurde so intuitiv wie möglich programmiert. Alle relevanten Befehle können über das Menü erreicht werden. Wenn ihr dennoch verbesserungsvorschläge habt, lasst es mich wissen. Folgend eine Liste aller unterstützter Befehle:
+##### Befehle vom Menü
+```
+/start                    -öffnet das Hauptmenü
+|- /status                -zeigt eine allgemeine Übersicht
+|- /einstellungen         -öffnet das Menü für verschiedene Einstellmöglichkeiten
+   |- /bewaesserungsdauer -öffnet Maske für das Einstellen der Bewässerungsdauer der einzelnen Kreise
+   |- /bewaesserungsplan  -öffnet Maske für die Bewässerungsplane
+   |- /regensensor        -öffnet Bedienfeld zum de-/aktivieren des Regensensor Eingangs
+   |- /werkseinstellung   -Befehl zum reseten (nullen) aller relevanten Speicherpunkte im EEPROM
+   |- /otaupdate          -öffnet Bedienfeld zum aktivieren von OTA Funktion für 5min
+|- /handsteuerung         -öffnet das Bedienfeld für die Handfunktion der Bewässerung
+```
+##### weitere Befehle
+`/debug`
+öffnet und aktivert den Debug Modus. Am Anfang wird ein Feld mit Infos angezeigt. Des weiteren werden verschiedene Debugmeldungen einzelner Funktionen aus dem Code angezeigt. Der Modus kann über erneutes eingeben des `/debug` Befehls abgeschaltet werden. Alternativ schaltet sich der Modus aus wenn der Mikrokontroller in den DeepSleep wechselt.
