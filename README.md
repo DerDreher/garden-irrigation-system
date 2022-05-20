@@ -5,7 +5,7 @@ A control software for a 4 circuit irrigation system. #ESP8266 #WIFI #TELEGRAM
 Im Frühling 2020 beschloss ich nach dem Umzug in unserer neuen Wohnung meinen eigenen Bewässerungscomputer für unseren Garten zu bauen. Zu diesem Zeitpunkt gab es wenige, kostengünstige Steuerungen mit WLAN Anschluss die per Internet zu bedienen waren. Also probierte ich mich am großen DIY :) Die Ideen waren schnell gesammelt und dabei kam folgendes zusammen:
 
 ### Grundfunktionen der Bewässerungsteuerung
-- kann 4 Wasser Kreise steuern
+- kann 4 Wasser Kreise steuern (nur nacheinander, Wartelistenprinzip)
 - erzeugt ein 50Hz Rechtecksignal für VDC Magnetventile
 - Eingang für Regensensor, Einstellbar ob dieser auch beachtet wird.
 - Stromsparfunktion bei Inaktivität(Deepsleep)
@@ -39,7 +39,7 @@ Wer einen Channel nutzen möchte sollte ihn jetzt ganz normal über z.B. die Sma
 >5. Wäre aus diesem Beispielen also ChannelID -> -123456789 und UserID -> 98765432
 
 In der "arduino_secrets.h" Datei müst ihr nun ein paar wichtige Eingaben tätigen. (Beispielhaft)
-```
+```c
 #define SECRET_WLAN_SSID "MustermannsWLAN"       // Der Name eueres WLAN's
 #define SECRET_WLAN_PASS "Musterpasswort"        // WLAN Passwort
 #define SECRET_TELEGRAM_TOKEN "lkgdjgr9324676GGHNAsd1!§$!%1vfhsafdjsd7"  // Eurer Telegram Bot Token
@@ -48,7 +48,7 @@ In der "arduino_secrets.h" Datei müst ihr nun ein paar wichtige Eingaben tätig
 #define SECRET_TELEGRAM_ADMIN2 ""                // zusätzlicher Zugang für eine Person
 #define SECRET_OTA_PASS "OTAmusterPasswort"      // wer mit OTA Arbeitet kann hier ein "Upload Schutz" Passwort festlegen. Drigend empfohlen.
 ```
-Für das erstmalige Uploaden der Firmeware/Sketches braucht ihr einen FTDI-USB Adapter. Beispiellink im Anschluss. Den Mikrokontroller müsst ihr in den Flash Modus booten (FLASH Taste gedrückt halten und dann die RESET Taste drücken) Habt ihr das Teil angesteckt und via USB Kabel mit eurem Rechner verbunden könnt ihr den Script Hochladen. Die notwendigen Einstellungen für den Compiler stehen ebenfalls im Kopfbereich des Sketches. Nach dem Erfolgreichen Upload nochmal die RESET Taste drücken. Nun sollte der ESP laufen!
+Für das erstmalige Uploaden der Firmeware/Sketches braucht ihr einen FTDI-USB Adapter. Beispiellink im Anschluss. Den Mikrokontroller müsst ihr in den Flash Modus booten (FLASH Taste gedrückt halten und dann die RESET Taste drücken) Bevor ihr den FTDI Adapter an den Mikrokontroller Steckt prüft bitte ob ihr diesen auf **3.3V** eingestellt habt ... sonst grillt ihr die Elektronik. Will keiner ;) Habt ihr das Teil angesteckt und via USB Kabel mit eurem Rechner verbunden könnt ihr den Script Hochladen. Die notwendigen Einstellungen für den Compiler stehen ebenfalls im Kopfbereich des Sketches. Nach dem Erfolgreichen Upload nochmal die RESET Taste drücken. Nun sollte der ESP laufen!
 https://www.amazon.de/AZDelivery-Adapter-FT232RL-Serial-gratis/dp/B01N9RZK6I?th=1
 
 ### Der Erste Start
@@ -71,3 +71,25 @@ Die Steuerung wurde so intuitiv wie möglich programmiert. Alle relevanten Befeh
 ##### weitere Befehle
 `/debug`
 öffnet und aktivert den Debug Modus. Am Anfang wird ein Feld mit Infos angezeigt. Des weiteren werden verschiedene Debugmeldungen einzelner Funktionen aus dem Code angezeigt. Der Modus kann über erneutes eingeben des `/debug` Befehls abgeschaltet werden. Alternativ schaltet sich der Modus aus wenn der Mikrokontroller in den DeepSleep wechselt.
+
+##### Bezeichnung der Kreise
+Wer die Bezeichnung der Kreise ändern möchte kann dies in der Sketchdatei tun (ca. Zeile 60)
+```c
+//Beschreibung für die einzelnen Kreise
+#define DEF_KREIS1 "Rasen"
+#define DEF_KREIS2 "Beet\/Sträucher"
+#define DEF_KREIS3 "Acker"
+#define DEF_KREIS4 "Hochbeet\/Tomaten"
+```
+
+### Problembehandlung
+##### Der Telegram-Bot reagiert nicht
+1. Überprüfe alle Eingegebenen Daten, gibt es vielleicht einen Tipfehler? Prüfe genau!
+2. Wird der Mikrokontroller mit Elektrische Energie versorgt? Er kann mit einer Eingangsspannung von 4-16V arbeiten, 12V ist ideal. Gleichspannung!
+3. Da die Platine keinerlei optische oder akustische Signale von sich gibt ist es sinnvoll den FTDI-USB Adapter anzuschließen und über z.B. der Arduino IDE mittels dem Serielen Monitor die Debugmeldungen zu analysieren. Bauterate auf 115200 einstellen!
+   - Prüfe anhand der Meldung ob eine WLAN Verbindung hergestellt wurde, ohne gehts nicht weiter!
+   - Wenn Telegram Nachrichten für den Bot eintreffen gibt er hier auch eine Meldung aus. Auch bei unbekannten Befehl, Ausprobieren!
+##### Kreis X Startet laut Telegram, es passiert aber nichts
+1. Überprüfe ob du in der `/bewaesserungsdauer` für diesen Kreis eine Bewässerungsdaur größer 0 eingestellt hast. Angabe sind in Minuten
+2. Überprüfe deine Verkabelung von der Platine zum Magnetventil. Prüfe ob Spannung von 24V messbar ist (je nach Hardwarekonfiguration)
+##### Rest Später ...
