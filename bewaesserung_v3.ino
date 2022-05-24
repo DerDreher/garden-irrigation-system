@@ -304,7 +304,95 @@ float printBuffer() {
     Serial.println(")");
   }
 }
+// Funktionen für die NewsMessages (Auslagerung aus der Haupt Funktion)
+void msg_regensensor1 (string chat_id) {
+	EEPROM.write((eeprom_address), 1);
+        EEPROM.commit();
+        cronjob_lade_daten();
+        Serial.println("Regensensor Aktiviert");
+        bot.sendMessage(chat_id, "Regensensor aktiviert");
+}
+void msg_regensensor0 (string chat_id) {
+        EEPROM.write((eeprom_address), 0);
+        EEPROM.commit();
+        cronjob_lade_daten();
+        Serial.println("Regensensor deaktiviert");
+        bot.sendMessage(chat_id, "Regensensor deaktiviert.");
+}
+void msg_otaan (string chat_id) {
+	if (!ota_aktiv) { //Aktivierung OTA Funktion wenn noch nicht aktiviert.
+		ArduinoOTA.setPassword((const char *)SECRET_OTA_PASS);
 
+		ArduinoOTA.onStart([]() {
+			Serial.println("Start");
+		});
+		ArduinoOTA.onEnd([]() {
+			Serial.println("\nEnd");
+		});
+		ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+			Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+		});
+		ArduinoOTA.onError([](ota_error_t error) {
+			Serial.printf("Error[%u]: ", error);
+			if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
+			else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
+			else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
+			else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
+			else if (error == OTA_END_ERROR) Serial.println("End Failed");
+		});
+		ArduinoOTA.begin();
+	}
+	ota_aktiv = true;
+	schlafen(5); // Deepsleep für 5min blockieren
+	ota_aktive_zeit = millis() + 300000;
+	Serial.println("OTA für 5min aktiviert");
+	bot.sendMessage(chat_id, "OTA für 5min aktiviert.");
+}
+void msg_stop (string chat_id) {
+	buffer.clear();
+	ringpuffer_sperrzeit = 0;
+	schlafen(Telegramm_DeepSleep_Stop, true); // DeepSleep Timer auf "Telegramm_DeepSleep_Stop" Zeit einstellen, egal was aktuell läuft
+	Serial.println("Alle aktuellen Bewässerungen gestoppt.");
+	bot.sendMessage(chat_id, "Alle aktuellen Bewässerungen gestoppt.");
+}
+void msg_kreisan (string chat_id, string text) {
+	text.replace("KREISAN", "");
+	textint = text.toInt();
+	buffer.push(textint);
+	Serial.println(textint);
+	Serial.println("Kreis " + text + " wurde in die Warteschlange aufgenommen.");
+	bot.sendMessage(chat_id, "Kreis " + text + " wurde in die Warteschlange aufgenommen.");
+}
+void msg_werkseinstellung (string chat_id) {
+	for (int i=0; i <= 56; i++){
+		EEPROM.write((eeprom_address + i), 0);
+		EEPROM.commit();
+	}
+	bot.sendMessage(chat_id, "Alle Speichereinträge gelöscht!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+	schlafen(Telegramm_DeepSleep_Stop, true);
+}
+void msg_dauerkreis (string chat_id, string text) { // inputstring  "/dauerkreis5zeit20"
+	bot.sendMessage(chat_id, text);
+	Serial.println(text);
+
+	char textchar[20];
+	text.toCharArray(textchar, 20);
+	int addr = getIntFromString(textchar, 1);
+	int val = getIntFromString(textchar, 2);
+	Serial.println(addr);
+	Serial.println(val);
+	Serial.println(addr + eeprom_address);
+
+	if (addr > 0 && addr < 5 && val >= 0 && val < 256) {
+		EEPROM.write((addr + eeprom_address), val);
+		EEPROM.commit();
+		cronjob_lade_daten();
+		bot.sendMessage(chat_id, "Gespeichert!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+	} else {
+		bot.sendMessage(chat_id, "Fehler Versuche es nochmal!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+		//bot.sendMessage(chat_id, addr);
+	}
+}
 void handleNewMessages(int numNewMessages) {
 
   for (int i = 0; i < numNewMessages; i++) {
@@ -320,64 +408,11 @@ void handleNewMessages(int numNewMessages) {
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////    Buttons   /////////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if (text == F("REGENSENSOR1")) {
-          EEPROM.write((eeprom_address), 1);
-          EEPROM.commit();
-          cronjob_lade_daten();
-          Serial.println("Regensensor Aktiviert");
-          bot.sendMessage(chat_id, "Regensensor aktiviert");
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (text == F("REGENSENSOR0")) {
-          EEPROM.write((eeprom_address), 0);
-          EEPROM.commit();
-          cronjob_lade_daten();
-          Serial.println("Regensensor deaktiviert");
-          bot.sendMessage(chat_id, "Regensensor deaktiviert.");
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (text == F("OTAAN")) {
-          if (!ota_aktiv) { //Aktivierung OTA Funktion wenn noch nicht aktiviert.
-              ArduinoOTA.setPassword((const char *)SECRET_OTA_PASS);
-  
-              ArduinoOTA.onStart([]() {
-                Serial.println("Start");
-              });
-              ArduinoOTA.onEnd([]() {
-                Serial.println("\nEnd");
-              });
-              ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-                Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-              });
-              ArduinoOTA.onError([](ota_error_t error) {
-                Serial.printf("Error[%u]: ", error);
-                if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-                else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-                else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-                else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-                else if (error == OTA_END_ERROR) Serial.println("End Failed");
-              });
-              ArduinoOTA.begin();
-          }
-          ota_aktiv = true;
-          schlafen(5); // Deepsleep für 5min blockieren
-          ota_aktive_zeit = millis() + 300000;
-          Serial.println("OTA für 5min aktiviert");
-          bot.sendMessage(chat_id, "OTA für 5min aktiviert.");
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (text == F("STOP")) {
-          buffer.clear();
-          ringpuffer_sperrzeit = 0;
-          schlafen(Telegramm_DeepSleep_Stop, true); // DeepSleep Timer auf "Telegramm_DeepSleep_Stop" Zeit einstellen, egal was aktuell läuft
-          Serial.println("Alle aktuellen Bewässerungen gestoppt.");
-          bot.sendMessage(chat_id, "Alle aktuellen Bewässerungen gestoppt.");
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (text.startsWith("KREISAN")) {
-          text.replace("KREISAN", "");
-          textint = text.toInt();
-          buffer.push(textint);
-          Serial.println(textint);
-          Serial.println("Kreis " + text + " wurde in die Warteschlange aufgenommen.");
-          bot.sendMessage(chat_id, "Kreis " + text + " wurde in die Warteschlange aufgenommen.");
-        }
+        if (text == F("REGENSENSOR1")) 		msg_regensensor1(chat_id);
+	else if (text == F("REGENSENSOR0")) 	msg_regensensor0(chat_id);
+	else if (text == F("OTAAN"))		msg_otaan(chat_id);
+        else if (text == F("STOP")) 		msg_stop(chat_id);
+        else if (text.startsWith("KREISAN"))	msg_kreisan(chat_id, text);
       } else {
         String chat_id = String(bot.messages[i].chat_id);
         String text = bot.messages[i].text;
@@ -394,41 +429,8 @@ void handleNewMessages(int numNewMessages) {
   
         }
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if (text == F("/werkseinstellung")) {
-
-          for (int i=0; i <= 56; i++){
-            EEPROM.write((eeprom_address + i), 0);
-            EEPROM.commit();
-          }
-          bot.sendMessage(chat_id, "Alle Speichereinträge gelöscht!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
-          schlafen(Telegramm_DeepSleep_Stop, true);
-  
-        }
-        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        if (text.startsWith("/dauerkreis")) { // inputstring  "/dauerkreis5zeit20"
-  
-          bot.sendMessage(chat_id, text);
-          Serial.println(text);
-  
-          char textchar[20];
-          text.toCharArray(textchar, 20);
-          int addr = getIntFromString(textchar, 1);
-          int val = getIntFromString(textchar, 2);
-          Serial.println(addr);
-          Serial.println(val);
-          Serial.println(addr + eeprom_address);
-  
-          if (addr > 0 && addr < 5 && val >= 0 && val < 256) {
-            EEPROM.write((addr + eeprom_address), val);
-            EEPROM.commit();
-            cronjob_lade_daten();
-            bot.sendMessage(chat_id, "Gespeichert!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
-          } else {
-            bot.sendMessage(chat_id, "Fehler Versuche es nochmal!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
-            //bot.sendMessage(chat_id, addr);
-          }
-  
-        }
+        if (text == F("/werkseinstellung")) msg_werkseinstellung(chat_id);
+        if (text.startsWith("/dauerkreis")) msg_dauerkreis(chat_id, text);
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (text == F("/status")) {
           //Abfrage Regensensor
