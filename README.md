@@ -1,6 +1,10 @@
 # garden-irrigation-system
 A control software for a 4 circuit irrigation system. #ESP8266 #WIFI #TELEGRAM
 
+### Latest news
+- ___attention, the current code has a message processing error. I am working on it, but have little time at the moment___
+- The code is currently only available in German. An English version will be available in the near future.
+
 ### Persönliche Note:
 Im Frühling 2020 beschloss ich nach dem Umzug in unserer neuen Wohnung meinen eigenen Bewässerungscomputer für unseren Garten zu bauen. Zu diesem Zeitpunkt gab es wenige, kostengünstige Steuerungen mit WLAN Anschluss die per Internet zu bedienen waren. Also probierte ich mich am großen DIY :) Die Ideen waren schnell gesammelt und dabei kam folgendes zusammen:
 
