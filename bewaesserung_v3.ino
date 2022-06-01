@@ -174,7 +174,7 @@ void schlafen(byte tmp_timeout = 0, bool stopnow = false) {
     deepsleep_timeoutzeit = ((tmp_timeout + 0.5) * 60000) + millis();
     Serial.print("Deepsleep Timer gelöscht und neue Zeit auf ");
     Serial.print(tmp_timeout);
-    Serial.println(" Sekunden gesetzt.");
+    Serial.println(" Minuten gesetzt.");
   }
   if (deepsleep_timeoutzeit > millis()) {
     // mach nix
@@ -182,7 +182,7 @@ void schlafen(byte tmp_timeout = 0, bool stopnow = false) {
   else {
     Serial.print("ESP schläft für ");
     Serial.print(deepsleep_schlafzeit);
-    Serial.println(" Sekunden ein.(DeepSleep)");
+    Serial.println(" Minuten ein.(DeepSleep)");
 
     //dirty Debug
     if (aktiv_debug) {
@@ -273,7 +273,7 @@ int cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte 
     EEPROM.commit();
     bot.sendMessage(chat_id, "Gespeichert!\n\n/bewaesserungsplan\n\n/einstellungen", "Markdown");
   } else {
-    bot.sendMessage(chat_id, "Fehler Versuche es nochmal!\n\n/bewaesserungsplan\n\n/einstellungen\n", "Markdown");
+    bot.sendMessage(chat_id, "Fehler, Versuche es nochmal!\n\n/bewaesserungsplan\n\n/einstellungen\n", "Markdown");
   }
 }
 
@@ -469,7 +469,7 @@ void msg_handsteuerung(String chat_id) {
   handsteuerungJson += F("{ \"text\" : \"Kreis 3\", \"callback_data\" : \"KREISAN3\" },");
   handsteuerungJson += F("{ \"text\" : \"Kreis 4\", \"callback_data\" : \"KREISAN4\" },");
   handsteuerungJson += F("{ \"text\" : \"Stop\", \"callback_data\" : \"STOP\" }]]");
-  bot.sendMessageWithInlineKeyboard(chat_id, "Startet ein Bewässerungsprozess von Hand. Diese hält nach der eingestellten Zeit selbstständig an. Zusätzlich gibt es eine Hand-Stop Funktion die alle Kreise sofort stopt(NOTAUS).\n\nKreis 1 = DEF_KREIS1\nKreis 2 = DEF_KREIS2\nKreis 3 = DEF_KREIS3\nKreis 4 = DEF_KREIS1\n\n oder zurück zu /start", "", handsteuerungJson);
+  bot.sendMessageWithInlineKeyboard(chat_id, "Startet ein Bewässerungsprozess von Hand. Diese hält nach der eingestellten Zeit selbstständig an. Zusätzlich gibt es eine Hand-Stop Funktion die alle Kreise sofort stopt(NOTAUS).\n\nKreis 1 = "DEF_KREIS1"\nKreis 2 = "DEF_KREIS2"\nKreis 3 = "DEF_KREIS3"\nKreis 4 = "DEF_KREIS4"\n\n oder zurück zu /start", "", handsteuerungJson);
 }
 
 void msg_otaupdate(String chat_id) {
@@ -479,13 +479,13 @@ void msg_otaupdate(String chat_id) {
 
 void msg_bewaesserungsdauer(String chat_id) {
   String bewaesserungsdauerstring = "Aktuelle Einstellungen sind:\n\n";
-  bewaesserungsdauerstring += "-Kreis 1 (DEF_KREIS1) -> ";
+  bewaesserungsdauerstring += "-Kreis 1 ("DEF_KREIS1") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[0];
-  bewaesserungsdauerstring += "min\n-Kreis 2 (DEF_KREIS2) -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 2 ("DEF_KREIS2") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[1];
-  bewaesserungsdauerstring += "min\n-Kreis 3 (DEF_KREIS3) -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 3 ("DEF_KREIS3") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[2];
-  bewaesserungsdauerstring += "min\n-Kreis 4 (DEF_KREIS4) -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 4 ("DEF_KREIS4") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[3];
   bewaesserungsdauerstring += "min\n\nWenn du eine Bewässerungsdauer ändern möchtest must du wie im Beispiel folgendes Eingeben. Kreis 5 soll auf 20 min geändert werden, also \n /dauerkreis5zeit20\n\n";
   bewaesserungsdauerstring += "hier geht es zurück zu den \n/einstellungen";
