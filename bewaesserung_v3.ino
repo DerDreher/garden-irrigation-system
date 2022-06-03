@@ -20,6 +20,7 @@
     Port: Entsprechend deinem USB-UART Adapter (siehe Windows Gerätemanager bzw. Linux Befehl "dmesg")
     Programmer: spielt keine Rolle, es wir immer ein USB-UART verwendet
 
+    4 More Info look @ https://arduino-esp8266.readthedocs.io/en/stable/ideoptions.html
 
     ToDo
     - Offset Wert beim Erstellen eines neuen Plans einfügen
@@ -166,23 +167,23 @@ void schlafen(byte tmp_timeout = 0, bool stopnow = false) {
   // zusätzlich wird eine halbe Minute dazu addiert
   if (tmp_timeout > 0 && (((tmp_timeout + 0.5) * 60000) + millis()) > deepsleep_timeoutzeit) {
     deepsleep_timeoutzeit = ((tmp_timeout + 0.5) * 60000) + millis();
-    Serial.print("Neue Timeoutzeit groeßer als die alte, setzte Neue Zeit auf ");
+    Serial.print(F("Neue Timeoutzeit groeßer als die alte, setzte Neue Zeit auf "));
     Serial.print(tmp_timeout);
-    Serial.println(" Sekunden.");
+    Serial.println(F(" Sekunden."));
   }
   if (tmp_timeout > 0 && stopnow) {
     deepsleep_timeoutzeit = ((tmp_timeout + 0.5) * 60000) + millis();
-    Serial.print("Deepsleep Timer gelöscht und neue Zeit auf ");
+    Serial.print(F("Deepsleep Timer gelöscht und neue Zeit auf "));
     Serial.print(tmp_timeout);
-    Serial.println(" Minuten gesetzt.");
+    Serial.println(F(" Minuten gesetzt."));
   }
   if (deepsleep_timeoutzeit > millis()) {
     // mach nix
   }
   else {
-    Serial.print("ESP schläft für ");
+    Serial.print(F("ESP schläft für "));
     Serial.print(deepsleep_schlafzeit);
-    Serial.println(" Minuten ein.(DeepSleep)");
+    Serial.println(F(" Minuten ein.(DeepSleep)"));
 
     //dirty Debug
     if (aktiv_debug) {
@@ -210,9 +211,9 @@ void cronjob_check() {
 
     if ( timeClient.getMinutes() == mm && timeClient.getHours() == hh && ((timeClient.getEpochTime() / 86400) + offset_d) % intervall == 0 && kreis != 0) {
       buffer.push(kreis);
-      Serial.print("Kreis ");
+      Serial.print(F("Kreis "));
       Serial.print(kreis);
-      Serial.println(" wurde vom Cronjob zur Warteschlange hinzugefügt");
+      Serial.println(F(" wurde vom Cronjob zur Warteschlange hinzugefügt"));
     }
     else {
       // keine Übereinstimmung, nüscht zu tun
@@ -232,7 +233,7 @@ void cronjob_lade_daten() {
 int cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte intervall, String chat_id) {
   // Speichert Daten/Jobs aus dem Telegram Chat in den EEPROM und lädt zum Schluss die neuen
   // Daten, über "cronjob_lade_daten ()", in den RAM
-  byte aktuellerIndex = EEPROM.read(eeprom_address + 5);
+  //byte aktuellerIndex = EEPROM.read(eeprom_address + 5);
   byte offset_d = 0;
   bool fehler = false;
 
@@ -243,12 +244,20 @@ int cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte 
     }
   }
   if (plannummer >= 0 && plannummer < 10) {
-    EEPROM.write((eeprom_address + 5), plannummer + 1);
+    //EEPROM.write((eeprom_address + 5), plannummer + 1);
   } else {
     fehler = true;
   }
   if (Kreis >= 0 && Kreis < 5 && !fehler) {
     EEPROM.write((eeprom_address + 6 + (plannummer * 5)), Kreis);
+    /*
+      Serial.print(eeprom_address);
+      Serial.print(" + 6 + (");
+      Serial.print(plannummer);
+      Serial.print(" * 5), ");
+      Serial.println(Kreis);
+      Serial.println(eeprom_address + 6 + (plannummer * 5));
+    */
   } else {
     fehler = true;
   }
@@ -267,14 +276,26 @@ int cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte 
   } else {
     fehler = true;
   }
-  EEPROM.write((eeprom_address + 10 + (plannummer * 5)), offset_d);
+  if (offset_d >= 0 && offset_d < 31) {
+    EEPROM.write((eeprom_address + 10 + (plannummer * 5)), offset_d);
+  }
+  else {
+    fehler = true;
+    Serial.println(F("Offsetwertberechnung für Planerstellung ergibt unzulässigen Wert."));
+  }
 
   if (!fehler) {
-    EEPROM.commit();
-    bot.sendMessage(chat_id, "Gespeichert!\n\n/bewaesserungsplan\n\n/einstellungen", "Markdown");
+    Serial.println(F("Starte EEPROM.commit()"));
+    boolean commit_check = EEPROM.commit();
+    if (commit_check) {
+      //bot.sendMessage(chat_id, "Gespeichert!\n\n/bewaesserungsplan\n\n/einstellungen", "Markdown");
+      Serial.println(F("EEPROM.commit() erfolgreich"));
+    }
+    else bot.sendMessage(chat_id, F("Fehler beim Abspeichern in den EEPROM. Kontaktiere den Programmierer für Hilfe."), "Markdown");
   } else {
-    bot.sendMessage(chat_id, "Fehler, Versuche es nochmal!\n\n/bewaesserungsplan\n\n/einstellungen\n", "Markdown");
+    bot.sendMessage(chat_id, F("Einer oder mehrere Werte sind außerhalb des Gültigkeitsbereich.\nPlannummer 0-9\nKreis 0-4\nStartzeit Stunde 0-23\nStartzeit Minute 0-59\nIntervall 0-30"), "Markdown");
   }
+  Serial.println(F("Verlasse cronjob_speichere_daten()"));
 }
 
 int lade_Bewaesserungsdauer(int dauerid) {
@@ -282,78 +303,56 @@ int lade_Bewaesserungsdauer(int dauerid) {
   return bewaesserungsdauer[dauerid - 1];
 }
 
-float printBuffer() {
-  if (buffer.isEmpty()) {
-    Serial.println("buffer empty");
-  } else {
-    Serial.print("[");
-    for (decltype(buffer)::index_t i = 0; i < buffer.size() - 1; i++) {
-      Serial.print(buffer[i]);
-      Serial.print(",");
-    }
-    Serial.print(buffer[buffer.size() - 1]);
-    Serial.print("] (");
-
-    Serial.print(buffer.size());
-    Serial.print("/");
-    Serial.print(buffer.size() + buffer.available());
-    if (buffer.isFull()) {
-      Serial.print(" full");
-    }
-
-    Serial.println(")");
-  }
-}
 // Funktionen für die NewsMessages (Auslagerung aus der Haupt Funktion)
 void msg_regensensor1 (String chat_id) {
-  EEPROM.write((eeprom_address), 1);
+  EEPROM.write(eeprom_address, 1);
   EEPROM.commit();
   cronjob_lade_daten();
-  Serial.println("Regensensor Aktiviert");
-  bot.sendMessage(chat_id, "Regensensor aktiviert");
+  Serial.println(F("Regensensor Aktiviert"));
+  bot.sendMessage(chat_id, F("Regensensor aktiviert"));
 }
 void msg_regensensor0 (String chat_id) {
-  EEPROM.write((eeprom_address), 0);
+  EEPROM.write(eeprom_address, 0);
   EEPROM.commit();
   cronjob_lade_daten();
-  Serial.println("Regensensor deaktiviert");
-  bot.sendMessage(chat_id, "Regensensor deaktiviert.");
+  Serial.println(F("Regensensor deaktiviert"));
+  bot.sendMessage(chat_id, F("Regensensor deaktiviert."));
 }
 void msg_otaan (String chat_id) {
   if (!ota_aktiv) { //Aktivierung OTA Funktion wenn noch nicht aktiviert.
     ArduinoOTA.setPassword((const char *)SECRET_OTA_PASS);
 
     ArduinoOTA.onStart([]() {
-      Serial.println("Start");
+      Serial.println(F("Start"));
     });
     ArduinoOTA.onEnd([]() {
-      Serial.println("\nEnd");
+      Serial.println(F("\nEnd"));
     });
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
       Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
     });
     ArduinoOTA.onError([](ota_error_t error) {
       Serial.printf("Error[%u]: ", error);
-      if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
-      else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
-      else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
-      else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
-      else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      if (error == OTA_AUTH_ERROR) Serial.println(F("Auth Failed"));
+      else if (error == OTA_BEGIN_ERROR) Serial.println(F("Begin Failed"));
+      else if (error == OTA_CONNECT_ERROR) Serial.println(F("Connect Failed"));
+      else if (error == OTA_RECEIVE_ERROR) Serial.println(F("Receive Failed"));
+      else if (error == OTA_END_ERROR) Serial.println(F("End Failed"));
     });
     ArduinoOTA.begin();
   }
   ota_aktiv = true;
   schlafen(5); // Deepsleep für 5min blockieren
   ota_aktive_zeit = millis() + 300000;
-  Serial.println("OTA für 5min aktiviert");
-  bot.sendMessage(chat_id, "OTA für 5min aktiviert.");
+  Serial.println(F("OTA für 5min aktiviert"));
+  bot.sendMessage(chat_id, F("OTA für 5min aktiviert."));
 }
 void msg_stop (String chat_id) {
   buffer.clear();
   ringpuffer_sperrzeit = 0;
   schlafen(Telegramm_DeepSleep_Stop, true); // DeepSleep Timer auf "Telegramm_DeepSleep_Stop" Zeit einstellen, egal was aktuell läuft
-  Serial.println("Alle aktuellen Bewässerungen gestoppt.");
-  bot.sendMessage(chat_id, "Alle aktuellen Bewässerungen gestoppt.");
+  Serial.println(F("Alle aktuellen Bewässerungen gestoppt."));
+  bot.sendMessage(chat_id, F("Alle aktuellen Bewässerungen gestoppt."));
 }
 void msg_kreisan (String chat_id, String text) {
   text.replace("KREISAN", "");
@@ -367,8 +366,9 @@ void msg_werkseinstellung (String chat_id) {
   for (int i = 0; i <= 56; i++) {
     EEPROM.write((eeprom_address + i), 0);
     EEPROM.commit();
+    cronjob_lade_daten();
   }
-  bot.sendMessage(chat_id, "Alle Speichereinträge gelöscht!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+  bot.sendMessage(chat_id, F("Alle Speichereinträge gelöscht!\n\n/status\n\n/einstellungen\n\n/handsteuerung"), "Markdown");
   schlafen(Telegramm_DeepSleep_Stop, true);
 }
 void msg_dauerkreis (String chat_id, String text) { // inputstring  "/dauerkreis5zeit20"
@@ -387,9 +387,9 @@ void msg_dauerkreis (String chat_id, String text) { // inputstring  "/dauerkreis
     EEPROM.write((addr + eeprom_address), val);
     EEPROM.commit();
     cronjob_lade_daten();
-    bot.sendMessage(chat_id, "Gespeichert!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+    bot.sendMessage(chat_id, F("Gespeichert!\n\n/status\n\n/einstellungen\n\n/handsteuerung"), "Markdown");
   } else {
-    bot.sendMessage(chat_id, "Fehler Versuche es nochmal!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+    bot.sendMessage(chat_id, F("Fehler Versuche es nochmal!\n\n/status\n\n/einstellungen\n\n/handsteuerung"), "Markdown");
     //bot.sendMessage(chat_id, addr);
   }
 }
@@ -397,12 +397,12 @@ void msg_status (String chat_id) {
   //Abfrage Regensensor
   String regensensor_anzeige;
   if (!regensensor_ram) {
-    regensensor_anzeige = "\xf0\x9f\x9b\x91\n";
+    regensensor_anzeige = F("\xf0\x9f\x9b\x91\n");
   } else {
     if (digitalRead(RegensensorPin)) {
-      regensensor_anzeige = "\xf0\x9f\x8c\x82\n";
+      regensensor_anzeige = F("\xf0\x9f\x8c\x82\n");
     } else {
-      regensensor_anzeige = "\xe2\x98\x94\xef\xb8\x8f\n";
+      regensensor_anzeige = F("\xe2\x98\x94\xef\xb8\x8f\n");
     }
   }
   String statusstring = "Aktuelle Werte:\n\n";
@@ -460,7 +460,7 @@ void msg_status (String chat_id) {
 }
 
 void msg_einstellungen(String chat_id) {
-  bot.sendMessage(chat_id, "Folgende Möglichkeiten:\n\n/bewaesserungsdauer\n\n/bewaesserungsplan\n\n/regensensor\n\n / werkseinstellung\n\n /otaupdate\n\noder zurück zu /start", "Markdown");
+  bot.sendMessage(chat_id, F("Folgende Möglichkeiten:\n\n/bewaesserungsdauer\n\n/bewaesserungsplan\n\n/regensensor\n\n / werkseinstellung\n\n /otaupdate\n\noder zurück zu /start"), "Markdown");
 }
 
 void msg_handsteuerung(String chat_id) {
@@ -474,7 +474,7 @@ void msg_handsteuerung(String chat_id) {
 
 void msg_otaupdate(String chat_id) {
   String otaupdateJson = F("[[{ \"text\" : \"OTA aktivieren\", \"callback_data\" : \"OTAAN\" }]]");
-  bot.sendMessageWithInlineKeyboard(chat_id, "Startet die \"Over The Air\" Funktion für 5min bzw. bis zum nächsten Neustart.\n\n oder zurück zu /start", "", otaupdateJson);
+  bot.sendMessageWithInlineKeyboard(chat_id, F("Startet die \"Over The Air\" Funktion für 5min bzw. bis zum nächsten Neustart.\n\n oder zurück zu /start"), "", otaupdateJson);
 }
 
 void msg_bewaesserungsdauer(String chat_id) {
@@ -493,7 +493,7 @@ void msg_bewaesserungsdauer(String chat_id) {
 }
 
 void msg_bewaesserungsplan(String chat_id) {
-  bot.sendMessage(chat_id, "Lade Daten...", "Markdown");
+  bot.sendMessage(chat_id, F("Lade Daten..."), "Markdown");
   String bewaesserungsplanstring = "Aktuelle Bewässerungspläne sind:\n\n";
 
   for (int i = 0; i < 10; i++) {
@@ -552,20 +552,21 @@ void msg_plan(String chat_id, String text) {
     int planintervall = getIntFromString(textchar2, 5);
   */
   cronjob_speichere_daten(getIntFromString(textchar2, 1), getIntFromString(textchar2, 2), getIntFromString(textchar2, 3), getIntFromString(textchar2, 4), getIntFromString(textchar2, 5), chat_id);
+  Serial.println(F("Verlasse msg_plan()"));
 }
 
 void msg_regensensor(String chat_id) {
   String regensensorJson = F("[[{ \"text\" : \"AN\", \"callback_data\" : \"REGENSENSOR1\" },{ \"text\" : \"AUS\", \"callback_data\" : \"REGENSENSOR0\" }]]");
-  bot.sendMessageWithInlineKeyboard(chat_id, "Regensensor an oder abschalten\n\n hier geht es zurück zu den /einstellungen", "", regensensorJson);
+  bot.sendMessageWithInlineKeyboard(chat_id, F("Regensensor an oder abschalten\n\n hier geht es zurück zu den /einstellungen"), "", regensensorJson);
 }
 
 void msg_debug(String chat_id) {
   if (aktiv_debug) {
     aktiv_debug = false;
-    bot.sendMessage(chat_id, "Debugmodus deaktivert.", "Markdown");
+    bot.sendMessage(chat_id, F("Debugmodus deaktivert."), "Markdown");
   }
   else {
-    bot.sendMessage(chat_id, "Lade Daten...", "Markdown");
+    bot.sendMessage(chat_id, F("Lade Daten..."), "Markdown");
     String debugstring = "**Pufferdaten:**\n";
     if (buffer.isEmpty()) {
       debugstring += "Buffer leer";
@@ -614,7 +615,7 @@ void msg_debug(String chat_id) {
 }
 
 void msg_restart(String chat_id) {
-  debugmsg("Restart ESP");
+  //debugmsg("Restart ESP");
   //ESP.restart(); //Hier gibts noch irgend einen Fehler ....
 }
 
@@ -650,7 +651,7 @@ void handleNewMessages(int numNewMessages) {
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (text == F("/start")) {
 
-          bot.sendMessage(chat_id, "Willkommen im Hauptmenü!\n\n/status\n\n/einstellungen\n\n/handsteuerung", "Markdown");
+          bot.sendMessage(chat_id, F("Willkommen im Hauptmenü!\n\n/status\n\n/einstellungen\n\n/handsteuerung"), "Markdown");
 
         }
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -662,14 +663,14 @@ void handleNewMessages(int numNewMessages) {
         if (text == F("/otaupdate"))          msg_otaupdate(chat_id);
         if (text == F("/bewaesserungsdauer")) msg_bewaesserungsdauer(chat_id);
         if (text == F("/bewaesserungsplan"))  msg_bewaesserungsplan(chat_id);
-        if (text.startsWith("/plan"))         msg_plan(chat_id, text);
-        if (text == F("/regensensor"))        msg_regensensor(chat_id);
+        if (text.startsWith("/plan"))         //msg_plan(chat_id, text);
+          if (text == F("/regensensor"))        msg_regensensor(chat_id);
         if (text == F("/debug"))              msg_debug(chat_id);
         if (text == F("/restart"))            msg_restart(chat_id);
       }
     }
     else {
-      bot.sendMessage(chat_id, "Du verfügst nicht über die nötigen Rechte den Bot zu steuern.", "Markdown");
+      bot.sendMessage(chat_id, F("Du verfügst nicht über die nötigen Rechte den Bot zu steuern."), "Markdown");
     }
   }
 }
@@ -700,19 +701,19 @@ void ringpuffer_abarbeiten() {
       aktuelle_ringbuffer_id = buffer.shift();
     }
     if (aktuelle_ringbuffer_id != 0) {
-      Serial.print("Arbeite Ringbufferaufträge ab...");
+      Serial.print(F("Arbeite Ringbufferaufträge ab..."));
       Serial.println(aktuelle_ringbuffer_id);
       Serial.print(millis());
-      Serial.print(" - ");
+      Serial.print(F(" - "));
       Serial.print(ringpuffer_startzeit);
-      Serial.print(" = ");
+      Serial.print(F(" = "));
       Serial.print(millis() - ringpuffer_startzeit);
-      Serial.print(" >= ");
+      Serial.print(F(" >= "));
       Serial.println(ringpuffer_sperrzeit);
       Serial.print(ringpuffer_sperrzeit);
-      Serial.print(" ms sind ");
+      Serial.print(F(" ms sind "));
       Serial.print(ringpuffer_sperrzeit / 60000);
-      Serial.println(" min");
+      Serial.println(F(" min"));
     }
 
     if (aktuelle_ringbuffer_id > 4) {
@@ -722,7 +723,7 @@ void ringpuffer_abarbeiten() {
     } else {
       /////
       if (regensensor_ram && !digitalRead(RegensensorPin) && aktuelle_ringbuffer_id > 0) {
-        bot.sendMessage(String(AdminID), "Regensensor meldet keine Bewässerung notwendig.", "Markdown");
+        bot.sendMessage(String(AdminID), F("Regensensor meldet keine Bewässerung notwendig."), "Markdown");
       }
       else {
         ringpuffer_startzeit = millis();
@@ -732,23 +733,23 @@ void ringpuffer_abarbeiten() {
         if (aktuelle_ringbuffer_id == 1) {
           pwm_ventil  = VentilePin1;
           tone(VentilePin1, 50);
-          Serial.println("Starte Kreis 1");
-          bot.sendMessage(String(AdminID), "Starte Kreis 1", "Markdown");
+          Serial.println(F("Starte Kreis 1"));
+          bot.sendMessage(String(AdminID), F("Starte Kreis 1"), "Markdown");
         } else if (aktuelle_ringbuffer_id == 2) {
           pwm_ventil  = VentilePin2;
           tone(VentilePin2, 50);
-          Serial.println("Starte Kreis 2");
-          bot.sendMessage(String(AdminID), "Starte Kreis 2", "Markdown");
+          Serial.println(F("Starte Kreis 2"));
+          bot.sendMessage(String(AdminID), F("Starte Kreis 2"), "Markdown");
         } else if (aktuelle_ringbuffer_id == 3) {
           pwm_ventil  = VentilePin3;
           tone(VentilePin3, 50);
-          Serial.println("Starte Kreis 3");
-          bot.sendMessage(String(AdminID), "Starte Kreis 3", "Markdown");
+          Serial.println(F("Starte Kreis 3"));
+          bot.sendMessage(String(AdminID), F("Starte Kreis 3"), "Markdown");
         } else if (aktuelle_ringbuffer_id == 4) {
           pwm_ventil  = VentilePin4;
           tone(VentilePin4, 50);
-          Serial.println("Starte Kreis 4");
-          bot.sendMessage(String(AdminID), "Starte Kreis 4", "Markdown");
+          Serial.println(F("Starte Kreis 4"));
+          bot.sendMessage(String(AdminID), F("Starte Kreis 4"), "Markdown");
         } else {}
       }
     }
@@ -766,11 +767,11 @@ float spannung_messen() {
   // anliegt. Das entspricht der Spannung der zu untersuchenden Batterie
 
   //Debug in Serialprint
-  Serial.print("Values: ");
+  Serial.print(F("Values: "));
   Serial.println(values);
-  Serial.print("Vout: ");
+  Serial.print(F("Vout: "));
   Serial.println(vout);
-  Serial.print("Vin: ");
+  Serial.print(F("Vin: "));
   Serial.println(vin);
   if (vin < 0.09) {
     vin = 0.0; // Unterdrücken unerwünschter Anzeigen
@@ -800,7 +801,7 @@ void setup() {
   pinMode(RegensensorPin, INPUT);
 
   Serial.begin(115200);
-  EEPROM.begin(512);
+  EEPROM.begin(200);
   while (!Serial) {} //Start running when the serial is open
   delay(100);
 
@@ -810,21 +811,21 @@ void setup() {
   WiFi.disconnect();
   delay(100);
 
-  Serial.print("\nConnecting Wifi: ");
+  Serial.print(F("\nConnecting Wifi: "));
   Serial.println(ssid);
   WiFi.begin(ssid, pass);
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
+    Serial.print(F("."));
     delay(500);
   }
   delay(1000);
   Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
+  Serial.println(F("WiFi connected"));
+  Serial.print(F("IP address: "));
   Serial.println(WiFi.localIP());
-  Serial.print("Signalstärke: ");
+  Serial.print(F("Signalstärke: "));
   Serial.print(WiFi.RSSI());
-  Serial.println("dBm");
+  Serial.println(F("dBm"));
 
   // Only required on 2.5 Beta
   client.setInsecure();
@@ -850,7 +851,7 @@ void loop() {
     ArduinoOTA.handle();
     if (millis() > ota_aktive_zeit) {
       ota_aktiv = false;
-      debugmsg("OTA deaktiviert!");
+      debugmsg(F("OTA deaktiviert!"));
     }
   }
   timeClient.update(); // Internetzeit update ?!
@@ -862,18 +863,18 @@ void loop() {
     //Serial.print("DeepSleep startet ");
     if (millis() - delayBetweenChecks > deepsleep_timeoutzeit ) {
       //Serial.println("jetzt!");
-      debugmsg("DeepSleep startet jetzt!");
+      debugmsg(F("DeepSleep startet jetzt!"));
     }
     else {
-      Serial.print("in ");
+      Serial.print(F("in "));
       Serial.print((deepsleep_timeoutzeit - millis()) / 1000);
-      Serial.println(" Sekunden");
+      Serial.println(F(" Sekunden"));
     }
     // getUpdates returns 1 if there is a new message from Telegram
     int numNewMessages = bot.getUpdates(bot.last_message_received + 1);
 
     if (numNewMessages) {
-      Serial.println("Neue Telegram Nachricht erhalten");
+      Serial.println(F("Neue Telegram Nachricht erhalten"));
       handleNewMessages(numNewMessages);
       schlafen(Telegramm_DeepSleep_Stop); // wenn neue Nachricht, wird der DeepSleep für 3 min blockiert
     }
@@ -883,7 +884,7 @@ void loop() {
 
   // Jede Minute ein CronJob Check + Sommer/Winterzeit Check
   if (cron_letzte_minute != timeClient.getMinutes()) {
-    Serial.println("Prüfe nach neuen Cronjob...");
+    Serial.println(F("Prüfe nach neuen Cronjob..."));
 
     cronjob_check(); // schaut ob geplante Aufräge zur aktuellen Zeit anstehen und schiebt sie in den Ringpuffer
 
