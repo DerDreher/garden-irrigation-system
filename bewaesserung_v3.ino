@@ -1,4 +1,4 @@
-#include "arduino_secrets.h"
+#include "./arduino_secrets.h"
 /*  ------ Einstellungen für den Upload/Compiler --------
     Board: Generic ESP8266 Module
     Builtin LED: 0
@@ -60,9 +60,9 @@
 
 //Beschreibung für die einzelnen Kreise
 #define DEF_KREIS1 "Rasen"
-#define DEF_KREIS2 "Beet\/Straeucher"
-#define DEF_KREIS3 "Acker"
-#define DEF_KREIS4 "Hochbeet\/Tomaten"
+#define DEF_KREIS2 "Beet/Straeucher"
+#define DEF_KREIS3 "Acker/Gewächshaus"
+#define DEF_KREIS4 "Hochbeet/Tomaten"
 
 // Für den Temperatursensor
 #define ONE_WIRE_BUS 4                          // GPIO des ESP
@@ -162,14 +162,14 @@ boolean summertime_EU(int year, byte month, byte day, byte hour, byte tzHours)
 }
 
 void schlafen(byte tmp_timeout = 0, bool stopnow = false) {
-  // tmp_timeout  wird in min angegeben, gibt die Zeit an wie lange der DeepSleep blockiert wird.
+  // tmp_timeout  wird in minuten angegeben, gibt die Zeit an wie lange der DeepSleep blockiert wird.
   // stopnow    false | true  Wenn true überschreibt tmp_timeout den aktuellen Counterwert.
   // zusätzlich wird eine halbe Minute dazu addiert
-  if (tmp_timeout > 0 && (((tmp_timeout + 0.5) * 60000) + millis()) > deepsleep_timeoutzeit) {
-    deepsleep_timeoutzeit = ((tmp_timeout + 0.5) * 60000) + millis();
+  if (tmp_timeout > 0 && ((tmp_timeout * 60000 + 30000) + millis()) > deepsleep_timeoutzeit) {
+    deepsleep_timeoutzeit = (tmp_timeout * 60000 +30000) + millis();
     Serial.print(F("Neue Timeoutzeit groeßer als die alte, setzte Neue Zeit auf "));
     Serial.print(tmp_timeout);
-    Serial.println(F(" Sekunden."));
+    Serial.println(F(" Minuten."));
   }
   if (tmp_timeout > 0 && stopnow) {
     deepsleep_timeoutzeit = ((tmp_timeout + 0.5) * 60000) + millis();
@@ -183,7 +183,7 @@ void schlafen(byte tmp_timeout = 0, bool stopnow = false) {
   else {
     Serial.print(F("ESP schläft für "));
     Serial.print(deepsleep_schlafzeit);
-    Serial.println(F(" Minuten ein.(DeepSleep)"));
+    Serial.println(F(" Sekunden ein.(DeepSleep)"));
 
     //dirty Debug
     if (aktiv_debug) {
@@ -230,7 +230,7 @@ void cronjob_lade_daten() {
   bewaesserungsdauer[3] = EEPROM.read(eeprom_address + 4);
 }
 
-int cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte intervall, String chat_id) {
+void cronjob_speichere_daten(byte plannummer, byte Kreis, byte hh, byte mm, byte intervall, String chat_id) {
   // Speichert Daten/Jobs aus dem Telegram Chat in den EEPROM und lädt zum Schluss die neuen
   // Daten, über "cronjob_lade_daten ()", in den RAM
   //byte aktuellerIndex = EEPROM.read(eeprom_address + 5);
@@ -369,6 +369,7 @@ void msg_werkseinstellung (String chat_id) {
     cronjob_lade_daten();
   }
   bot.sendMessage(chat_id, F("Alle Speichereinträge gelöscht!\n\n/status\n\n/einstellungen\n\n/handsteuerung"), "Markdown");
+  Serial.println("Alle Speichereinträge gelöscht. Werkseinstellung hergestellt.");
   schlafen(Telegramm_DeepSleep_Stop, true);
 }
 void msg_dauerkreis (String chat_id, String text) { // inputstring  "/dauerkreis5zeit20"
@@ -469,7 +470,7 @@ void msg_handsteuerung(String chat_id) {
   handsteuerungJson += F("{ \"text\" : \"Kreis 3\", \"callback_data\" : \"KREISAN3\" },");
   handsteuerungJson += F("{ \"text\" : \"Kreis 4\", \"callback_data\" : \"KREISAN4\" },");
   handsteuerungJson += F("{ \"text\" : \"Stop\", \"callback_data\" : \"STOP\" }]]");
-  bot.sendMessageWithInlineKeyboard(chat_id, "Startet ein Bewässerungsprozess von Hand. Diese hält nach der eingestellten Zeit selbstständig an. Zusätzlich gibt es eine Hand-Stop Funktion die alle Kreise sofort stopt(NOTAUS).\n\nKreis 1 = "DEF_KREIS1"\nKreis 2 = "DEF_KREIS2"\nKreis 3 = "DEF_KREIS3"\nKreis 4 = "DEF_KREIS4"\n\n oder zurück zu /start", "", handsteuerungJson);
+  bot.sendMessageWithInlineKeyboard(chat_id, "Startet ein Bewässerungsprozess von Hand. Diese hält nach der eingestellten Zeit selbstständig an. Zusätzlich gibt es eine Hand-Stop Funktion die alle Kreise sofort stopt(NOTAUS).\n\nKreis 1 = " DEF_KREIS1 "\nKreis 2 = " DEF_KREIS2 "\nKreis 3 = " DEF_KREIS3 "\nKreis 4 = " DEF_KREIS4 "\n\n oder zurück zu /start", "", handsteuerungJson);
 }
 
 void msg_otaupdate(String chat_id) {
@@ -479,13 +480,21 @@ void msg_otaupdate(String chat_id) {
 
 void msg_bewaesserungsdauer(String chat_id) {
   String bewaesserungsdauerstring = "Aktuelle Einstellungen sind:\n\n";
-  bewaesserungsdauerstring += "-Kreis 1 ("DEF_KREIS1") -> ";
+  bewaesserungsdauerstring += "-Kreis 1 (";
+  bewaesserungsdauerstring += DEF_KREIS1;
+  bewaesserungsdauerstring += ") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[0];
-  bewaesserungsdauerstring += "min\n-Kreis 2 ("DEF_KREIS2") -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 2 (";
+  bewaesserungsdauerstring += DEF_KREIS2;
+  bewaesserungsdauerstring += ") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[1];
-  bewaesserungsdauerstring += "min\n-Kreis 3 ("DEF_KREIS3") -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 3 (";
+  bewaesserungsdauerstring += DEF_KREIS3;
+  bewaesserungsdauerstring += ") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[2];
-  bewaesserungsdauerstring += "min\n-Kreis 4 ("DEF_KREIS4") -> ";
+  bewaesserungsdauerstring += "min\n-Kreis 4 (";
+  bewaesserungsdauerstring += DEF_KREIS4;
+  bewaesserungsdauerstring += ") -> ";
   bewaesserungsdauerstring += bewaesserungsdauer[3];
   bewaesserungsdauerstring += "min\n\nWenn du eine Bewässerungsdauer ändern möchtest must du wie im Beispiel folgendes Eingeben. Kreis 5 soll auf 20 min geändert werden, also \n /dauerkreis5zeit20\n\n";
   bewaesserungsdauerstring += "hier geht es zurück zu den \n/einstellungen";
@@ -663,8 +672,8 @@ void handleNewMessages(int numNewMessages) {
         if (text == F("/otaupdate"))          msg_otaupdate(chat_id);
         if (text == F("/bewaesserungsdauer")) msg_bewaesserungsdauer(chat_id);
         if (text == F("/bewaesserungsplan"))  msg_bewaesserungsplan(chat_id);
-        if (text.startsWith("/plan"))         //msg_plan(chat_id, text);
-          if (text == F("/regensensor"))        msg_regensensor(chat_id);
+        if (text.startsWith("/plan"))         msg_plan(chat_id, text);
+        if (text == F("/regensensor"))        msg_regensensor(chat_id);
         if (text == F("/debug"))              msg_debug(chat_id);
         if (text == F("/restart"))            msg_restart(chat_id);
       }
@@ -716,7 +725,7 @@ void ringpuffer_abarbeiten() {
       Serial.println(F(" min"));
     }
 
-    if (aktuelle_ringbuffer_id > 4) {
+    if (aktuelle_ringbuffer_id > 4 || aktuelle_ringbuffer_id == 0 ) {
       // hier ist platz für Spezial Geschichten
       ringpuffer_startzeit = millis();
       ringpuffer_sperrzeit = 500;
@@ -729,6 +738,7 @@ void ringpuffer_abarbeiten() {
         ringpuffer_startzeit = millis();
         ringpuffer_sperrzeit = lade_Bewaesserungsdauer(aktuelle_ringbuffer_id) * 60000;
         schlafen(lade_Bewaesserungsdauer(aktuelle_ringbuffer_id)); // DeepSleep für Bewässerungsdauer blockieren
+        Serial.println(F("DeepSleep für Bewässerungsdauer blockieren"));
         // Schalte den Ausgewählten Kreis an
         if (aktuelle_ringbuffer_id == 1) {
           pwm_ventil  = VentilePin1;
