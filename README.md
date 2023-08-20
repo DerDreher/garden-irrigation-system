@@ -2,7 +2,7 @@
 A control software for a 4 circuit irrigation system. #ESP8266 #WIFI #TELEGRAM
 
 ### Latest news
-- ___Attention, currently there is a problem with creating a watering schedule. The microcontroller is crashing! But I am on it. If someone recognizes the problem, write me. I am glad about help.___
+- ___I finally found the errors in the irrigation schedule create and why the ESP does not switch to DeepSleep. Both are fixed. .___
 - The code is currently only available in German. An English version will be available in the near future.
 
 ### Persönliche Note:
